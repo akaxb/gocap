@@ -1,0 +1,2 @@
+# gocap
+go version cap
