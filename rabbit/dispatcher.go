@@ -2,7 +2,6 @@ package rabbit
 
 import (
 	"context"
-	"fmt"
 	"github.com/akaxb/gocap/core"
 	"github.com/akaxb/gocap/model"
 	"github.com/akaxb/gocap/storage"
@@ -11,7 +10,7 @@ import (
 	"time"
 )
 
-const defaultEnqueueTimeoutMillisecond = 1000
+const defaultEnqueueTimeoutMillisecond = 500
 
 type Dispatcher struct {
 	msgCh       chan *model.Message
@@ -48,17 +47,18 @@ func WithQueueLen(len int) DispatcherOption {
 }
 
 func (d *Dispatcher) EnqueueToPublish(msg *model.Message) {
-	ctx, cancel := context.WithTimeout(context.Background(), defaultEnqueueTimeoutMillisecond)
+	d.logger.Printf("try to send message id:%d to channel", msg.Id)
+	ctx, cancel := context.WithTimeout(context.Background(), defaultEnqueueTimeoutMillisecond*time.Millisecond)
 	defer cancel()
 	//在队列阻塞的时候，尝试重试，直到超时，退出
 loop:
 	for {
 		select {
 		case d.msgCh <- msg:
-			d.logger.Printf("send message id:%s to channel success", msg.Id)
+			d.logger.Printf("send message id:%d to channel success", msg.Id)
 			break loop
 		case <-ctx.Done():
-			fmt.Errorf("try send to channel timeout %w", ctx.Err())
+			d.logger.Printf("try send to channel timeout: %v", ctx.Err()) // 记录超时错误
 			break loop
 		default:
 			d.logger.Println("channel is full, wait for a while")
@@ -75,11 +75,10 @@ func (d *Dispatcher) Start() {
 func (d *Dispatcher) sending() {
 	go func() {
 		for msg := range d.msgCh {
-			d.logger.Printf("send message id:%s to MQ", msg.Id)
+			d.logger.Printf("send message id:%d to MQ", msg.Id)
 			err := d.transport.Send(msg.Name, msg)
 			if err != nil {
-				d.logger.Printf("send message to mq failed %s", err)
-
+				d.logger.Printf("send message to MQ failed %s", err)
 			} else {
 				d.setSuccessfulState(msg)
 			}

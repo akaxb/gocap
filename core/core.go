@@ -1,6 +1,8 @@
 package core
 
-import "github.com/akaxb/gocap/model"
+import (
+	"github.com/akaxb/gocap/model"
+)
 
 type ITransport interface {
 	Send(name string, message *model.Message) error //send message to rabbitmq

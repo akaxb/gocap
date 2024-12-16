@@ -2,7 +2,7 @@ package model
 
 type Message struct {
 	Name    string
-	Id      int
+	Id      int64
 	Data    interface{}
 	Retries int
 	Status  MessageStatus

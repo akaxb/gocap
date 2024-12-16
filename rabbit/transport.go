@@ -44,7 +44,7 @@ func (r *Transport) Send(name string, message *model.Message) error {
 	msg := amqp.Publishing{
 		ContentType:  "text/plain",
 		Body:         []byte(message.Data.(string)),
-		MessageId:    strconv.Itoa(message.Id),
+		MessageId:    strconv.FormatInt(message.Id, 10),
 		DeliveryMode: 2,
 	}
 	err = ch.PublishWithContext(ctx, r.pool.exchange, name, false, false, msg)
