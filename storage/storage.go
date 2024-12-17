@@ -8,9 +8,9 @@ import (
 
 type IDataStorage interface {
 	Close() error
-	StoreMessage(message *model.Message) error
-	StoreMessageWithTransaction(message *model.Message) error
-	ChangeState(tableName string, msg *model.Message, status model.MessageStatus) error
+	StoreMessage(mediumMsg *model.MediumMessage) error
+	StoreMessageWithTransaction(mediumMsg *model.MediumMessage) error
+	ChangeState(tableName string, msg *model.MediumMessage, status model.MessageStatus) error
 	BeginTransaction(msgId int64) *sql.Tx
 	SetTX(snowId int64, tx *sql.Tx)
 	GetTX(snowId int64) *sql.Tx

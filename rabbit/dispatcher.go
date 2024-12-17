@@ -12,8 +12,10 @@ import (
 
 const defaultEnqueueTimeoutMillisecond = 500
 
+var _ core.IDispatch = (*Dispatcher)(nil)
+
 type Dispatcher struct {
-	msgCh       chan *model.Message
+	msgCh       chan *model.MediumMessage
 	len         int
 	logger      *log.Logger
 	transport   core.ITransport
@@ -41,12 +43,12 @@ type DispatcherOption func(*Dispatcher)
 
 func WithQueueLen(len int) DispatcherOption {
 	return func(d *Dispatcher) {
-		d.msgCh = make(chan *model.Message, len)
+		d.msgCh = make(chan *model.MediumMessage, len)
 		d.len = len
 	}
 }
 
-func (d *Dispatcher) EnqueueToPublish(msg *model.Message) {
+func (d *Dispatcher) EnqueueToPublish(msg *model.MediumMessage) {
 	d.logger.Printf("try to send message id:%d to channel", msg.Id)
 	ctx, cancel := context.WithTimeout(context.Background(), defaultEnqueueTimeoutMillisecond*time.Millisecond)
 	defer cancel()
@@ -101,10 +103,10 @@ func (d *Dispatcher) Stop() error {
 	return nil
 }
 
-func (d *Dispatcher) setSuccessfulState(msg *model.Message) error {
+func (d *Dispatcher) setSuccessfulState(msg *model.MediumMessage) error {
 	return d.s.ChangeState(d.initializer.GetPublishedTableName(), msg, model.Success)
 }
 
-func (d *Dispatcher) SetFailedState(msg *model.Message) error {
+func (d *Dispatcher) SetFailedState(msg *model.MediumMessage) error {
 	return d.s.ChangeState(d.initializer.GetPublishedTableName(), msg, model.Fail)
 }

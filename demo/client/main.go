@@ -9,8 +9,8 @@ import (
 
 func main() {
 	var wg sync.WaitGroup
-	wg.Add(10)
-	for i := 0; i < 10; i++ {
+	wg.Add(1)
+	for i := 0; i < 1; i++ {
 		go func(id int) {
 			defer wg.Done()
 			url := fmt.Sprintf("http://localhost:8083/publish/trans?msg=order-%d", id)

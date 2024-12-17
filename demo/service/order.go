@@ -12,10 +12,10 @@ type OrderService struct {
 	publisher    core.ICapPublish
 }
 
-func (u *OrderService) Add(order *model.Order) {
+func (u *OrderService) Add(order *model.Orders) {
 	u.OrderStorage.Add(order)
 }
 
-func (u *OrderService) AddWithTransaction(tx *sql.Tx, order *model.Order) error {
+func (u *OrderService) AddWithTransaction(tx *sql.Tx, order *model.Orders) error {
 	return u.OrderStorage.AddWithTransaction(tx, order)
 }

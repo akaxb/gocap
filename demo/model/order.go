@@ -1,6 +1,6 @@
 package model
 
-type Order struct {
+type Orders struct {
 	Id   int64
 	Name string
 }

@@ -31,13 +31,13 @@ func NewOrderStorage(conStr string) *OrderStorage {
 	return m
 }
 
-func (s *OrderStorage) Add(order *model.Order) error {
+func (s *OrderStorage) Add(order *model.Orders) error {
 	sql := "insert into Orders(id,name) values(?,?)"
 	_, err := s.db.Exec(sql, order.Id, order.Name)
 	return err
 }
 
-func (s *OrderStorage) AddWithTransaction(tx *sql.Tx, order *model.Order) error {
+func (s *OrderStorage) AddWithTransaction(tx *sql.Tx, order *model.Orders) error {
 	sql := "insert into Orders(id,name) values(?,?)"
 	_, err := tx.Exec(sql, order.Id, order.Name)
 	if err != nil {

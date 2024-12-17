@@ -3,7 +3,6 @@ package mysqlstorage
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"github.com/akaxb/gocap/model"
 	"github.com/akaxb/gocap/storage"
@@ -81,43 +80,34 @@ func (s *MysqlStorage) Close() error {
 	return s.db.Close()
 }
 
-func (s *MysqlStorage) StoreMessage(message *model.Message) error {
+func (s *MysqlStorage) StoreMessage(mediumMsg *model.MediumMessage) error {
 	sql := fmt.Sprintf("INSERT INTO `%s` (`Id`, `Version`, `Name`, `Content`, `Retries`, `Added`, `ExpiresAt`, `StatusName`) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", s.initializer.GetPublishedTableName())
-	//s.log.Printf("StoreMessage:the sql is %s", sql)
-	data, err := json.Marshal(message.Data)
-	if err != nil {
-		return fmt.Errorf("StoreMessage：json marshal error: %w", err)
-	}
 	stmt, err := s.db.Prepare(sql)
 	if err != nil {
 		return fmt.Errorf("StoreMessage：Prepare statement error: %w", err)
 	}
 	defer stmt.Close()
-	_, err = stmt.Exec(message.Id, "v1", message.Name, string(data), message.Retries, time.Now(), nil, model.Scheduled)
+	_, err = stmt.Exec(mediumMsg.Id, "v1", mediumMsg.Name, mediumMsg.Content, mediumMsg.Retries, time.Now(), nil, model.Scheduled)
 	if err != nil {
 		return fmt.Errorf("StoreMessage：Exec statement error: %w", err)
 	}
-	s.log.Printf("StoreMessage: %v", message.Id)
+	s.log.Printf("StoreMessage: %v", mediumMsg.Id)
 	return nil
 }
 
-func (s *MysqlStorage) StoreMessageWithTransaction(message *model.Message) error {
+func (s *MysqlStorage) StoreMessageWithTransaction(mediumMsg *model.MediumMessage) error {
 	sql1 := fmt.Sprintf("INSERT INTO `%s` (`Id`, `Version`, `Name`, `Content`, `Retries`, `Added`, `ExpiresAt`, `StatusName`) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", s.initializer.GetPublishedTableName())
-	data, err := json.Marshal(message.Data)
-	if err != nil {
-		return fmt.Errorf("StoreMessage：json marshal error: %w", err)
-	}
-	tx := s.GetTX(message.Id)
+	tx := s.GetTX(mediumMsg.Id)
 	//_, err = tx.Exec(sql1, "1867128159846010880", "v1", message.Name, string(data), message.Retries, time.Now(), nil, model.Scheduled)
-	_, err = tx.Exec(sql1, message.Id, "v1", message.Name, string(data), message.Retries, time.Now(), nil, model.Scheduled)
+	_, err := tx.Exec(sql1, mediumMsg.Id, "v1", mediumMsg.Name, mediumMsg.Content, mediumMsg.Retries, time.Now(), nil, model.Scheduled)
 	if err != nil {
-		s.log.Printf("rollback trans with msg %d", message.Id)
+		s.log.Printf("rollback trans with msg %d", mediumMsg.Id)
 		if rollbackErr := tx.Rollback(); rollbackErr != nil {
 			return fmt.Errorf("StoreMessage: Exec and Rollback errors: %w, rollback error: %v", err, rollbackErr)
 		}
 		return fmt.Errorf("StoreMessage: Exec statement error: %w", err)
 	}
-	s.removeTransaction(message.Id)
+	s.removeTransaction(mediumMsg.Id)
 	err = tx.Commit()
 	if err != nil {
 		return fmt.Errorf("StoreMessage：Commit error: %w", err)
@@ -125,7 +115,7 @@ func (s *MysqlStorage) StoreMessageWithTransaction(message *model.Message) error
 	return nil
 }
 
-func (s *MysqlStorage) ChangeState(tableName string, msg *model.Message, status model.MessageStatus) error {
+func (s *MysqlStorage) ChangeState(tableName string, msg *model.MediumMessage, status model.MessageStatus) error {
 	sql := fmt.Sprintf("UPDATE `%s` SET `StatusName` = ?  WHERE `Id` = ?", tableName)
 	// Prepare statement for insertion
 	stmt, err := s.db.Prepare(sql)

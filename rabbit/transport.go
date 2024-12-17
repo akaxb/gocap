@@ -2,7 +2,9 @@ package rabbit
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/akaxb/gocap/core"
 	"github.com/akaxb/gocap/model"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"log"
@@ -14,6 +16,8 @@ type Transport struct {
 	pool   *ConnectionChannelPool
 	logger *log.Logger
 }
+
+var _ core.ITransport = (*Transport)(nil)
 
 func NewTransport(logger *log.Logger, rabbitMQOptions RabbitmqOptions, opts ...option) *Transport {
 	t := &Transport{
@@ -28,7 +32,7 @@ func NewTransport(logger *log.Logger, rabbitMQOptions RabbitmqOptions, opts ...o
 
 type option func(r *Transport)
 
-func (r *Transport) Send(name string, message *model.Message) error {
+func (r *Transport) Send(name string, message *model.MediumMessage) error {
 	ch, err := r.pool.Rent()
 	if err != nil {
 		return fmt.Errorf("failed to rent a channel from pool: %w", err)
@@ -41,9 +45,13 @@ func (r *Transport) Send(name string, message *model.Message) error {
 	}()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+	body, err := json.Marshal(message.Origin.Value)
+	if err != nil {
+		return fmt.Errorf("failed to marshal message: %w", err)
+	}
 	msg := amqp.Publishing{
 		ContentType:  "text/plain",
-		Body:         []byte(message.Data.(string)),
+		Body:         body,
 		MessageId:    strconv.FormatInt(message.Id, 10),
 		DeliveryMode: 2,
 	}
@@ -52,7 +60,7 @@ func (r *Transport) Send(name string, message *model.Message) error {
 		r.logger.Println("Failed to publish a message:", err)
 		return err
 	}
-	r.logger.Printf(" [x] Sent %s\n", message.Data.(string))
+	r.logger.Printf(" [x] Sent %s\n", string(body))
 	return nil
 }
 

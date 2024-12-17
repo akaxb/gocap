@@ -5,16 +5,16 @@ import (
 )
 
 type ITransport interface {
-	Send(name string, message *model.Message) error //send message to rabbitmq
+	Send(name string, message *model.MediumMessage) error //send message to rabbitmq
 	Close() error
 }
 
 type ICapPublish interface {
-	Publish(name string, message *model.Message) error // Publish message to channel
+	Publish(name string, msg *model.Message) error // Publish message to channel
 }
 
 type IDispatch interface {
-	EnqueueToPublish(message *model.Message)
+	EnqueueToPublish(message *model.MediumMessage)
 	Start()
 	Stop() error
 }
